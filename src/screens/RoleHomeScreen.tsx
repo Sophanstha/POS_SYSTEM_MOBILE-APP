@@ -1,11 +1,11 @@
 import { router, type Href } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { ScrollView, View } from "react-native";
 import { Button, IconButton, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ModuleCard, { type IconName } from "../components/ModuleCard";
 import { useAuth } from "../context/AuthContext";
+import { useThemeMode } from "../context/ThemeContext";
 import { useAppTheme } from "../theme/paperTheme";
 
 export type HomeModule = {
@@ -18,7 +18,7 @@ export type HomeModule = {
 export default function RoleHomeScreen({ modules }: { modules: HomeModule[] }) {
   const theme = useAppTheme();
   const { user, role, activeOutlet, logout } = useAuth();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const { isDark, toggleTheme } = useThemeMode();
 
   return (
     <View className="flex-1 bg-background">
@@ -33,11 +33,11 @@ export default function RoleHomeScreen({ modules }: { modules: HomeModule[] }) {
             </Text>
           </View>
           <IconButton
-            icon={colorScheme === "dark" ? "white-balance-sunny" : "moon-waning-crescent"}
-            iconColor={colorScheme === "dark" ? theme.colors.gold : theme.colors.onSurfaceVariant}
+            icon={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
+            iconColor={isDark ? theme.colors.gold : theme.colors.onSurfaceVariant}
             mode="outlined"
-            onPress={toggleColorScheme}
-            accessibilityLabel="Toggle theme"
+            onPress={toggleTheme}
+            accessibilityLabel={isDark ? "Switch to light theme" : "Switch to dark theme"}
           />
         </View>
 

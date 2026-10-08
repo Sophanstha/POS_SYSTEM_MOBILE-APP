@@ -1,7 +1,5 @@
-// import ComingSoonScreen from "../../src/screens/ComingSoonScreen";
-
-import ComingSoonScreen from "../../src/screens/ComingSoonScreen";
+import TakeawayScreen from "../../src/screens/TakeawayScreen";
 
 export default function CashierTakeaway() {
-  return <ComingSoonScreen title="Takeaway" />;
+  return <TakeawayScreen />;
 }

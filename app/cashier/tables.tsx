@@ -1,5 +1,6 @@
-import ComingSoonScreen from "../../src/screens/ComingSoonScreen";
+import TablesScreen from "../../src/screens/TablesScreen";
+
 
 export default function CashierTables() {
-  return <ComingSoonScreen title="Tables" />;
+  return <TablesScreen basePath="/cashier" showPickupQueue />;
 }

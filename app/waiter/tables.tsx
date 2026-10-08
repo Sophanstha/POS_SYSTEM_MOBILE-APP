@@ -1,5 +1,5 @@
-import ComingSoonScreen from "../../src/screens/ComingSoonScreen";
+import TablesScreen from "../../src/screens/TablesScreen";
 
 export default function WaiterTables() {
-  return <ComingSoonScreen title="Tables" />;
+  return <TablesScreen basePath="/waiter" />;
 }

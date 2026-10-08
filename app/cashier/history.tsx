@@ -1,5 +1,5 @@
-import ComingSoonScreen from "../../src/screens/ComingSoonScreen";
+import HistoryScreen from "../../src/screens/HistoryScreen";
 
 export default function CashierHistory() {
-  return <ComingSoonScreen title="Order history" />;
+  return <HistoryScreen />;
 }

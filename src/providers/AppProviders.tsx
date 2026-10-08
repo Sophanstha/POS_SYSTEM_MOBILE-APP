@@ -1,14 +1,14 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { focusManager, QueryClientProvider } from "@tanstack/react-query";
-import { useColorScheme } from "nativewind";
-import { useEffect, type ComponentProps, type ReactNode } from "react";
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "expo-router";
+import { useEffect, useMemo, type ComponentProps, type ReactNode } from "react";
 import { AppState, Platform, type AppStateStatus } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../context/AuthContext";
+import { ThemeProvider, useThemeMode } from "../context/ThemeContext";
 import { queryClient } from "../lib/queryClient";
-import { darkTheme, lightTheme } from "../theme/paperTheme";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -27,25 +27,52 @@ function useAppStateFocus() {
 export default function AppProviders({ children }: { children: ReactNode }) {
   useAppStateFocus();
 
-  // Paper follows the same light/dark mode as NativeWind (colorScheme.set / toggle).
-  const { colorScheme } = useColorScheme();
-  const theme = colorScheme === "light" ? lightTheme : darkTheme;
-
+  // Auth comes before the theme so each user's saved light/dark choice can be loaded.
   return (
     <SafeAreaProvider>
-      <PaperProvider
-        theme={theme}
-        settings={{
-          // Paper's own icons (TextInput.Icon, List.Icon, Button icon=…) use @expo/vector-icons.
-          icon: ({ name, size, color }) => (
-            <MaterialCommunityIcons name={name as IconName} size={size} color={color} />
-          ),
-        }}
-      >
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>{children}</AuthProvider>
-        </QueryClientProvider>
-      </PaperProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider>
+            <ThemedProviders>{children}</ThemedProviders>
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** Paper and navigation both follow the one light/dark mode from ThemeContext. */
+function ThemedProviders({ children }: { children: ReactNode }) {
+  const { theme, isDark } = useThemeMode();
+
+  // Screen / header colours expo-router uses (incl. during screen transitions).
+  const navigationTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.background,
+        text: theme.colors.onBackground,
+        border: theme.colors.outlineVariant,
+        notification: theme.colors.error,
+      },
+    };
+  }, [theme, isDark]);
+
+  return (
+    <PaperProvider
+      theme={theme}
+      settings={{
+        // Paper's own icons (TextInput.Icon, List.Icon, Button icon=…) use @expo/vector-icons.
+        icon: ({ name, size, color }) => (
+          <MaterialCommunityIcons name={name as IconName} size={size} color={color} />
+        ),
+      }}
+    >
+      <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
+    </PaperProvider>
   );
 }

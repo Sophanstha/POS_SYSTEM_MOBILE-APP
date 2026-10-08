@@ -2,14 +2,11 @@ import "../global.css";
 
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { colorScheme } from "nativewind";
 
 import { useAuth } from "../src/context/AuthContext";
+import { useThemeMode } from "../src/context/ThemeContext";
 import { useStackScreenOptions } from "../src/navigation/useStackScreenOptions";
 import AppProviders from "../src/providers/AppProviders";
-
-// Match the POS: dark theme by default.
-colorScheme.set("dark");
 
 // Keep the splash screen up until the saved session has been checked.
 SplashScreen.preventAutoHideAsync();
@@ -19,15 +16,23 @@ export default function RootLayout() {
     <AppProviders>
       <SplashScreenController />
       <RootNavigator />
-      <StatusBar style="auto" />
+      <ThemedStatusBar />
     </AppProviders>
   );
 }
 
 function SplashScreenController() {
   const { status } = useAuth();
-  if (status !== "loading") SplashScreen.hide();
+  const { ready } = useThemeMode();
+  // Also wait for the saved theme, so the app never flashes the wrong colours.
+  if (status !== "loading" && ready) SplashScreen.hide();
   return null;
+}
+
+/** Light status-bar icons on the dark theme, dark icons on the light theme. */
+function ThemedStatusBar() {
+  const { isDark } = useThemeMode();
+  return <StatusBar style={isDark ? "light" : "dark"} />;
 }
 
 /**
