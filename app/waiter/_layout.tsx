@@ -10,6 +10,7 @@ export default function WaiterLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="tables" options={{ title: "Dine-In" }} />
       <Stack.Screen name="table/[id]" options={{ title: "Table" }} />
+      <Stack.Screen name="settings" options={{ title: "Settings" }} />
       <Stack.Screen name="history" options={{ title: "History" }} />
     </Stack>
   );

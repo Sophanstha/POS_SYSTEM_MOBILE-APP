@@ -17,7 +17,7 @@ export type HomeModule = {
 /** Shared home screen for waiter and cashier: greeting, module cards, logout. */
 export default function RoleHomeScreen({ modules }: { modules: HomeModule[] }) {
   const theme = useAppTheme();
-  const { user, role, activeOutlet, logout } = useAuth();
+  const { user, role, activeOutlet, appRole, logout } = useAuth();
   const { isDark, toggleTheme } = useThemeMode();
 
   return (
@@ -25,19 +25,36 @@ export default function RoleHomeScreen({ modules }: { modules: HomeModule[] }) {
       <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
         <View className="flex-row items-center justify-between px-5 pt-2">
           <View className="flex-1">
-            <Text variant="titleMedium" style={{ color: theme.colors.onBackground }}>
+            <Text
+              variant="titleMedium"
+              style={{ color: theme.colors.onBackground }}
+            >
               {user?.name ?? ""}
             </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text
+              variant="bodySmall"
+              style={{ color: theme.colors.onSurfaceVariant }}
+            >
               {[role, activeOutlet?.name].filter(Boolean).join(" · ")}
             </Text>
           </View>
           <IconButton
             icon={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
-            iconColor={isDark ? theme.colors.gold : theme.colors.onSurfaceVariant}
+            iconColor={
+              isDark ? theme.colors.gold : theme.colors.onSurfaceVariant
+            }
             mode="outlined"
             onPress={toggleTheme}
-            accessibilityLabel={isDark ? "Switch to light theme" : "Switch to dark theme"}
+            accessibilityLabel={
+              isDark ? "Switch to light theme" : "Switch to dark theme"
+            }
+          />
+          <IconButton
+            icon="cog-outline"
+            iconColor={theme.colors.onSurfaceVariant}
+            mode="outlined"
+            onPress={() => router.push(`/${appRole}/settings`)}
+            accessibilityLabel="Settings"
           />
         </View>
 
@@ -45,13 +62,20 @@ export default function RoleHomeScreen({ modules }: { modules: HomeModule[] }) {
           <View className="gap-2">
             <Text
               variant="headlineLarge"
-              style={{ textAlign: "center", fontWeight: "700", color: theme.colors.onBackground }}
+              style={{
+                textAlign: "center",
+                fontWeight: "700",
+                color: theme.colors.onBackground,
+              }}
             >
               WELCOME BACK
             </Text>
             <Text
               variant="bodyLarge"
-              style={{ textAlign: "center", color: theme.colors.onSurfaceVariant }}
+              style={{
+                textAlign: "center",
+                color: theme.colors.onSurfaceVariant,
+              }}
             >
               Select a service module to begin.
             </Text>

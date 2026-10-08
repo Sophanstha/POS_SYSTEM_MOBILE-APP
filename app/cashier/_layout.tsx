@@ -12,6 +12,7 @@ export default function CashierLayout() {
       <Stack.Screen name="tables" options={{ title: "Dine-In" }} />
       <Stack.Screen name="table/[id]" options={{ title: "Table" }} />
       <Stack.Screen name="history" options={{ title: "History" }} />
+      <Stack.Screen name="settings" options={{ title: "Settings" }} />
     </Stack>
   );
 }
