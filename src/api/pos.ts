@@ -18,6 +18,7 @@ import type {
   PaymentStatus,
   Product,
   ProductVariant,
+  StockItem,
   TableOrdersResponse,
   TableStatus,
 } from "../types/pos";
@@ -29,7 +30,10 @@ export async function getTables(): Promise<DiningTable[]> {
   return data.tables ?? [];
 }
 
-export async function setTableStatus(tableId: string, status: TableStatus): Promise<void> {
+export async function setTableStatus(
+  tableId: string,
+  status: TableStatus,
+): Promise<void> {
   await api.patch(`/tables/${tableId}/status`, { status });
 }
 
@@ -53,50 +57,83 @@ export async function getProducts(categoryId?: string): Promise<Product[]> {
     const { data } = await api.get<{
       products: Product[] | { products: Product[]; total: number };
     }>("/product", {
-      params: { limit: PRODUCT_PAGE_SIZE, page, ...(categoryId ? { categoryId } : {}) },
+      params: {
+        limit: PRODUCT_PAGE_SIZE,
+        page,
+        ...(categoryId ? { categoryId } : {}),
+      },
     });
 
-    const list = Array.isArray(data.products) ? data.products : (data.products?.products ?? []);
-    const total = Array.isArray(data.products) ? list.length : (data.products?.total ?? list.length);
+    const list = Array.isArray(data.products)
+      ? data.products
+      : (data.products?.products ?? []);
+    const total = Array.isArray(data.products)
+      ? list.length
+      : (data.products?.total ?? list.length);
     all.push(...list);
 
     if (list.length < PRODUCT_PAGE_SIZE || all.length >= total) return all;
   }
 }
 
-export async function getVariants(productId: string, outletId?: string | null): Promise<ProductVariant[]> {
-  const { data } = await api.get<{ variants: ProductVariant[] }>(`/product/${productId}/variants`, {
-    params: outletId ? { outletId } : undefined,
-  });
+export async function getVariants(
+  productId: string,
+  outletId?: string | null,
+): Promise<ProductVariant[]> {
+  const { data } = await api.get<{ variants: ProductVariant[] }>(
+    `/product/${productId}/variants`,
+    {
+      params: outletId ? { outletId } : undefined,
+    },
+  );
   return data.variants ?? [];
 }
 
 export async function getOutlet(outletId: string): Promise<OutletDetails> {
-  const { data } = await api.get<{ outlet: OutletDetails }>(`/outlets/${outletId}`);
+  const { data } = await api.get<{ outlet: OutletDetails }>(
+    `/outlets/${outletId}`,
+  );
   return data.outlet;
 }
 
 // ── Orders ──
 
 /** Active (not completed/cancelled) orders on a table. Note: the path takes a TABLE id. */
-export async function getTableOrders(tableId: string): Promise<TableOrdersResponse> {
+export async function getTableOrders(
+  tableId: string,
+): Promise<TableOrdersResponse> {
   const { data } = await api.get<TableOrdersResponse>(`/orders/${tableId}`);
   return { table: data.table, orders: data.orders ?? [] };
 }
 
-export async function getOrderHistory(range: { startDate?: string; endDate?: string }): Promise<HistoryOrder[]> {
-  const { data } = await api.get<{ orders: HistoryOrder[] }>("/orders", { params: range });
+export async function getOrderHistory(range: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<HistoryOrder[]> {
+  const { data } = await api.get<{ orders: HistoryOrder[] }>("/orders", {
+    params: range,
+  });
   return data.orders ?? [];
 }
 
-export async function createDineInOrder(input: CreateDineInOrderInput): Promise<CreateDineInOrderResponse> {
-  const { data } = await api.post<CreateDineInOrderResponse>("/orders/dine-in", input);
+export async function createDineInOrder(
+  input: CreateDineInOrderInput,
+): Promise<CreateDineInOrderResponse> {
+  const { data } = await api.post<CreateDineInOrderResponse>(
+    "/orders/dine-in",
+    input,
+  );
   return data;
 }
 
 /** Creates AND pays a takeaway order in one call. */
-export async function createTakeawayOrder(input: CreateTakeawayOrderInput): Promise<CreateTakeawayOrderResponse> {
-  const { data } = await api.post<CreateTakeawayOrderResponse>("/orders/takeaway", input);
+export async function createTakeawayOrder(
+  input: CreateTakeawayOrderInput,
+): Promise<CreateTakeawayOrderResponse> {
+  const { data } = await api.post<CreateTakeawayOrderResponse>(
+    "/orders/takeaway",
+    input,
+  );
   return data;
 }
 
@@ -107,18 +144,34 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
 // ── Payments ──
 
-export async function payOrder({ orderId, ...body }: PayOrderInput): Promise<PayOrderResponse> {
-  const { data } = await api.post<PayOrderResponse>(`/orders/${orderId}/payment`, body);
+export async function payOrder({
+  orderId,
+  ...body
+}: PayOrderInput): Promise<PayOrderResponse> {
+  const { data } = await api.post<PayOrderResponse>(
+    `/orders/${orderId}/payment`,
+    body,
+  );
   return data;
 }
 
-export async function getPaymentStatus(orderId: string): Promise<PaymentStatus> {
-  const { data } = await api.get<PaymentStatus>(`/orders/${orderId}/partial-payment`);
+export async function getPaymentStatus(
+  orderId: string,
+): Promise<PaymentStatus> {
+  const { data } = await api.get<PaymentStatus>(
+    `/orders/${orderId}/partial-payment`,
+  );
   return data;
 }
 
-export async function payPartial({ orderId, ...body }: PartialPaymentInput): Promise<PartialPaymentResponse> {
-  const { data } = await api.post<PartialPaymentResponse>(`/orders/${orderId}/partial-payment`, body);
+export async function payPartial({
+  orderId,
+  ...body
+}: PartialPaymentInput): Promise<PartialPaymentResponse> {
+  const { data } = await api.post<PartialPaymentResponse>(
+    `/orders/${orderId}/partial-payment`,
+    body,
+  );
   return data;
 }
 
@@ -130,7 +183,10 @@ export async function getKotTickets(): Promise<KotTicket[]> {
   return data.tickets ?? [];
 }
 
-export async function setKotTicketStatus(ticketId: string, status: KotStatus): Promise<void> {
+export async function setKotTicketStatus(
+  ticketId: string,
+  status: KotStatus,
+): Promise<void> {
   await api.patch(`/kot/${ticketId}`, { status });
 }
 
@@ -142,12 +198,36 @@ export async function setKotItemStatus(
 }
 
 /** Payments already made on an order and the balance still due (server-calculated, tax included). */
-export async function getOrderPayments(orderId: string): Promise<OrderPayments> {
+export async function getOrderPayments(
+  orderId: string,
+): Promise<OrderPayments> {
   const { data } = await api.get<OrderPayments>(`/orders/${orderId}/payment`);
   return data;
 }
 
 /** Where the table sits on the floor plan, in the web's pixels (shared with the web POS). */
-export async function setTablePosition(tableId: string, position: { x: number; y: number }): Promise<void> {
-  await api.patch(`/tables/${tableId}`, { positionX: position.x, positionY: position.y });
+export async function setTablePosition(
+  tableId: string,
+  position: { x: number; y: number },
+): Promise<void> {
+  await api.patch(`/tables/${tableId}`, {
+    positionX: position.x,
+    positionY: position.y,
+  });
+}
+
+// ── Inventory (kitchen wastage) ──
+
+/** Active stock items of the outlet (needs inventory.stock.read). */
+export async function getStockItems(): Promise<StockItem[]> {
+  const { data } = await api.get<{ stockItems: StockItem[] }>("/inventory");
+  return data.stockItems ?? [];
+}
+
+/** Take wasted stock off the shelf (needs inventory.stock.update). Can't be more than what's in stock. */
+export async function reportWastage(
+  stockItemId: string,
+  input: { quantity: number; note?: string },
+): Promise<void> {
+  await api.post(`/inventory/${stockItemId}/wastage`, input);
 }

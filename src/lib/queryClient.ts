@@ -1,6 +1,27 @@
-import { QueryClient } from "@tanstack/react-query";
-import axios from "axios"
+import NetInfo from "@react-native-community/netinfo";
+import { MutationCache, onlineManager, QueryClient } from "@tanstack/react-query";
+import axios from "axios";
+
+import { haptics } from "./haptics";
+
+declare module "@tanstack/react-query" {
+  interface Register {
+    mutationMeta: { successHaptic?: boolean };
+  }
+}
+
+
+onlineManager.setEventListener((setOnline) =>
+  NetInfo.addEventListener((state) => setOnline(state.isConnected !== false)),
+);
+
 export const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: (_data, _variables, _context, mutation) => {
+      if (mutation.meta?.successHaptic) haptics.success();
+    },
+    onError: () => haptics.error(),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
@@ -11,7 +32,8 @@ export const queryClient = new QueryClient({
       },
     },
     mutations: {
-      retry: false, 
+      retry: false,
+      networkMode: "always",
     },
   },
 });

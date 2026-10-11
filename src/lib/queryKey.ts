@@ -24,6 +24,7 @@ export const queryKeys = {
   orderPayments: (outletId: string, orderId: string) =>
     ["orderPayments", outletId, orderId] as const,
   orderPaymentsAll: (outletId: string) => ["orderPayments", outletId] as const,
+  stockItems: (outletId: string) => ["stockItems", outletId] as const,
 };
 
 /** How often live screens poll — same as the web POS. */

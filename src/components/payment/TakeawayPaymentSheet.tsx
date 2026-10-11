@@ -6,7 +6,15 @@ import { getErrorMessage } from "../../api/client";
 import type { Cart } from "../../hooks/useCart";
 import { useOutlet } from "../../hooks/useMenu";
 import { useCreateTakeawayOrder } from "../../hooks/useOrder";
-import { formatRs, outletTaxRate, PAYMENT_METHOD_LABEL, resolveTender, serverTotals } from "../../lib/pos";
+import {
+  formatRs,
+  outletTaxRate,
+  PAYMENT_METHOD_LABEL,
+  resolveTender,
+  roundMoney,
+  serverTotals,
+  toNumber,
+} from "../../lib/pos";
 import { useAppTheme } from "../../theme/paperTheme";
 import type { PaymentMethod } from "../../types/pos";
 import BottomSheet from "./BottomSheet";
@@ -14,6 +22,8 @@ import PaymentMethodPicker from "./PaymentMethodPicker";
 import PaymentSuccess, { type SuccessRow } from "./PaymentSuccess";
 import SummaryRow from "./SummaryRow";
 import TenderInput from "./TenderInput";
+import { ReceiptData, receiptHeader } from "../../lib/receipt";
+import { useAuth } from "../../context/AuthContext";
 
 type TakeawayPaymentSheetProps = {
   visible: boolean;
@@ -22,12 +32,18 @@ type TakeawayPaymentSheetProps = {
   customer: { customerName?: string; customerPhone?: string };
 };
 
-type Receipt = { orderNumber: number; rows: SuccessRow[] };
-
+// type Receipt = { orderNumber: number; rows: SuccessRow[] };
+type Receipt = { orderNumber: number; rows: SuccessRow[]; data: ReceiptData };
 /** Take payment for the cart and place the takeaway order in one go (POST /orders/takeaway). */
-export default function TakeawayPaymentSheet({ visible, onDismiss, cart, customer }: TakeawayPaymentSheetProps) {
+export default function TakeawayPaymentSheet({
+  visible,
+  onDismiss,
+  cart,
+  customer,
+}: TakeawayPaymentSheetProps) {
   const theme = useAppTheme();
   const outlet = useOutlet();
+  const { activeOutlet } = useAuth();
   const createOrder = useCreateTakeawayOrder();
 
   const [method, setMethod] = useState<PaymentMethod>("cash");
@@ -67,12 +83,66 @@ export default function TakeawayPaymentSheet({ visible, onDismiss, cart, custome
       ];
       if (method === "cash") {
         rows.push({ label: "Cash received", value: formatRs(tendered) });
-        rows.push({ label: "Change to return", value: formatRs(result.changeDue), tone: "success" });
+        rows.push({
+          label: "Change to return",
+          value: formatRs(result.changeDue),
+          tone: "success",
+        });
       }
-      if (customer.customerName) rows.push({ label: "Customer", value: customer.customerName, tone: "muted" });
+      if (customer.customerName)
+        rows.push({
+          label: "Customer",
+          value: customer.customerName,
+          tone: "muted",
+        });
+
+      // Receipt (built before the cart is cleared). Amounts are the server's.
+      const grandTotal = toNumber(result.total);
+      const subtotal = toNumber(result.subtotal);
+      const tax = toNumber(result.tax.amount);
+      const adjustment = roundMoney(grandTotal - subtotal - tax); // delivery-platform price
+      const data: ReceiptData = {
+        ...receiptHeader(outlet.data, activeOutlet?.name),
+        date: new Date(),
+        orderType: "Takeaway",
+        orderNumbers: [result.order.orderNumber],
+        customerName: customer.customerName,
+        customerPhone: customer.customerPhone,
+        sections: [
+          {
+            lines: cart.lines.map((line) => ({
+              name: line.variantLabel
+                ? `${line.name} (${line.variantLabel})`
+                : line.name,
+              quantity: line.quantity,
+              amount: roundMoney(line.unitPrice * line.quantity),
+            })),
+          },
+        ],
+        totals: [
+          { label: "Subtotal", amount: subtotal },
+          {
+            label: `${result.tax.name ?? "Tax"} (${result.tax.rate}%)`,
+            amount: tax,
+          },
+          ...(adjustment > 0
+            ? [
+                {
+                  label: `${PAYMENT_METHOD_LABEL[method]} price`,
+                  amount: adjustment,
+                },
+              ]
+            : []),
+        ],
+        grandTotal,
+        payment: {
+          method: PAYMENT_METHOD_LABEL[method],
+          ...(method === "cash" ? { tendered, change: result.changeDue } : {}),
+        },
+      };
 
       cart.clear();
-      setReceipt({ orderNumber: result.order.orderNumber, rows });
+      setReceipt({ orderNumber: result.order.orderNumber, rows, data });
     } catch (e) {
       setError(getErrorMessage(e));
     }
@@ -84,19 +154,28 @@ export default function TakeawayPaymentSheet({ visible, onDismiss, cart, custome
       onDismiss={onDismiss}
       dismissable={!createOrder.isPending}
       title={receipt ? "Takeaway" : "Takeaway payment"}
-      subtitle={receipt ? undefined : "Payment places the order and sends it to the kitchen"}
+      subtitle={
+        receipt
+          ? undefined
+          : "Payment places the order and sends it to the kitchen"
+      }
     >
       {receipt ? (
         <PaymentSuccess
           title={`Order #${receipt.orderNumber} paid`}
           subtitle="Sent to the kitchen. It shows under “Ready for pickup” when done."
           rows={receipt.rows}
+          receipt={receipt.data}
           doneLabel="New order"
           onDone={onDismiss}
         />
       ) : (
         <>
-          <ScrollView style={{ flexShrink: 1 }} contentContainerClassName="gap-4 px-4 pb-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={{ flexShrink: 1 }}
+            contentContainerClassName="gap-4 px-4 pb-4"
+            keyboardShouldPersistTaps="handled"
+          >
             <View className="gap-1">
               {cart.lines.map((line) => (
                 <SummaryRow
@@ -111,10 +190,20 @@ export default function TakeawayPaymentSheet({ visible, onDismiss, cart, custome
                 label={`${outlet.data?.taxName ?? "Tax"} (${taxLoading ? "…" : `${taxRate}%`})`}
                 value={formatRs(totals.tax)}
               />
-              <SummaryRow label="Total due" value={formatRs(totals.total)} tone="total" />
+              <SummaryRow
+                label="Total due"
+                value={formatRs(totals.total)}
+                tone="total"
+              />
               {customer.customerName || customer.customerPhone ? (
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-                  Customer: {[customer.customerName, customer.customerPhone].filter(Boolean).join(" · ")}
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}
+                >
+                  Customer:{" "}
+                  {[customer.customerName, customer.customerPhone]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </Text>
               ) : null}
             </View>
@@ -137,7 +226,11 @@ export default function TakeawayPaymentSheet({ visible, onDismiss, cart, custome
               disabled={createOrder.isPending}
             />
 
-            {error ? <HelperText type="error" padding="none">{error}</HelperText> : null}
+            {error ? (
+              <HelperText type="error" padding="none">
+                {error}
+              </HelperText>
+            ) : null}
           </ScrollView>
 
           <View className="px-4">
@@ -146,7 +239,13 @@ export default function TakeawayPaymentSheet({ visible, onDismiss, cart, custome
               icon="check"
               onPress={pay}
               loading={createOrder.isPending}
-              disabled={createOrder.isPending || taxLoading || cart.lines.length === 0 || tender.amount === null || !!tender.error}
+              disabled={
+                createOrder.isPending ||
+                taxLoading ||
+                cart.lines.length === 0 ||
+                tender.amount === null ||
+                !!tender.error
+              }
               contentStyle={{ height: 52 }}
             >
               {`Confirm payment · ${formatRs(method === "cash" || tender.amount === null ? totals.total : tender.amount)}`}

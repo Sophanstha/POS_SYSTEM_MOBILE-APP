@@ -1,11 +1,14 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { ActivityIndicator, Button, Card, Chip, Divider, Searchbar, Text } from "react-native-paper";
+import { Button, Card, Chip, Divider, Searchbar, Text } from "react-native-paper";
 import { DatePickerModal, en, registerTranslation } from "react-native-paper-dates";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getErrorMessage } from "../api/client";
+import { CardListSkeleton } from "../components/Skeleton";
 import StatusPill from "../components/StatusPill";
+import { useLayout } from "../hooks/useLayout";
 import { useOrderHistory } from "../hooks/useOrder";
 import { formatRs, orderItemName, PAYMENT_METHOD_LABEL, roundMoney, toDateParam, toNumber } from "../lib/pos";
 import { useAppTheme } from "../theme/paperTheme";
@@ -57,6 +60,9 @@ const displayDate = (param?: string) => (param ? param.split("-").reverse().join
 /** Past orders of the outlet, like the web Order History (newest 50 per range — server limit). */
 export default function HistoryScreen() {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  // Landscape / tablet: stats in one row and orders in two columns (like the web page).
+  const { isWide } = useLayout();
 
   const [preset, setPreset] = useState<DatePreset>("all");
   const [customRange, setCustomRange] = useState<{ startDate?: string; endDate?: string }>({});
@@ -97,13 +103,15 @@ export default function HistoryScreen() {
 
   const header = (
     <View className="gap-3 pb-3 pt-1">
-      <View className="flex-row gap-3">
-        <StatCard label="Total orders" value={String(stats.total)} color={theme.colors.onSurface} />
-        <StatCard label="Revenue" value={formatRs(stats.revenue)} color={theme.colors.primary} />
-      </View>
-      <View className="flex-row gap-3">
-        <StatCard label="Completed" value={String(stats.completed)} color={theme.colors.success} />
-        <StatCard label="Pending" value={String(stats.pending)} color={theme.colors.warning} />
+      <View className={isWide ? "flex-row gap-3" : "gap-3"}>
+        <View className={isWide ? "flex-1 flex-row gap-3" : "flex-row gap-3"}>
+          <StatCard label="Total orders" value={String(stats.total)} color={theme.colors.onSurface} />
+          <StatCard label="Revenue" value={formatRs(stats.revenue)} color={theme.colors.primary} />
+        </View>
+        <View className={isWide ? "flex-1 flex-row gap-3" : "flex-row gap-3"}>
+          <StatCard label="Completed" value={String(stats.completed)} color={theme.colors.success} />
+          <StatCard label="Pending" value={String(stats.pending)} color={theme.colors.warning} />
+        </View>
       </View>
 
       <Searchbar
@@ -172,10 +180,20 @@ export default function HistoryScreen() {
   return (
     <View className="flex-1 bg-background">
       <FlatList
+        key={isWide ? "two-columns" : "one-column"} // numColumns can't change on the fly
         data={history.isLoading ? [] : visible}
         keyExtractor={(o) => o.id}
+        numColumns={isWide ? 2 : 1}
+        columnWrapperStyle={isWide ? { gap: 12, alignItems: "flex-start" } : undefined}
         ListHeaderComponent={header}
         contentContainerClassName="gap-3 px-4 pb-8"
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 1200,
+          alignSelf: "center",
+          paddingLeft: insets.left + 16,
+          paddingRight: insets.right + 16,
+        }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -185,15 +203,17 @@ export default function HistoryScreen() {
           />
         }
         renderItem={({ item }) => (
-          <HistoryCard
-            order={item}
-            expanded={expanded === item.id}
-            onToggle={() => setExpanded(expanded === item.id ? null : item.id)}
-          />
+          <View style={isWide ? { flex: 1 / 2 } : undefined}>
+            <HistoryCard
+              order={item}
+              expanded={expanded === item.id}
+              onToggle={() => setExpanded(expanded === item.id ? null : item.id)}
+            />
+          </View>
         )}
         ListEmptyComponent={
           history.isLoading ? (
-            <ActivityIndicator style={{ marginTop: 48 }} />
+            <CardListSkeleton />
           ) : (
             <Text
               variant="bodyMedium"

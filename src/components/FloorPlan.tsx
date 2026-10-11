@@ -9,6 +9,7 @@ import { TABLE_STATUS_LABEL, tableHasFoodReady } from "../lib/pos";
 import { useAppTheme } from "../theme/paperTheme";
 import { tableStatusColor } from "../theme/statusColors";
 import type { DiningTable, KotTicket, TableStatus } from "../types/pos";
+import { haptics } from "../lib/haptics";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -174,6 +175,7 @@ function FloorTableCard({
         isDragging.current = true;
         dragStart.current = latest.current.position;
         setLifted(true);
+        haptics.tap();
         latest.current.onDragChange(true);
       },
       onPanResponderMove: (_e, g) => {

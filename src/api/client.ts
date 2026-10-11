@@ -26,7 +26,7 @@ export function setAuthHandlers(next: AuthHandlers) {
 
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, 
+  withCredentials: true,
   timeout: 15000,
 });
 
@@ -35,10 +35,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-
 let refreshPromise: Promise<RefreshResponse> | null = null;
 
-export function refreshSession(outletId: string | null = activeOutletId): Promise<RefreshResponse> {
+export function refreshSession(
+  outletId: string | null = activeOutletId,
+): Promise<RefreshResponse> {
   if (!refreshPromise) {
     refreshPromise = axios
       .post<RefreshResponse>(
@@ -85,7 +86,10 @@ api.interceptors.response.use(
       return api(original);
     } catch (refreshError) {
       // Only a rejected refresh token ends the session; a network blip does not.
-      if (axios.isAxiosError(refreshError) && refreshError.response?.status === 401) {
+      if (
+        axios.isAxiosError(refreshError) &&
+        refreshError.response?.status === 401
+      ) {
         handlers.onSessionExpired?.();
       }
       return Promise.reject(refreshError);
@@ -93,11 +97,18 @@ api.interceptors.response.use(
   },
 );
 
-export function getErrorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+export function getErrorMessage(
+  err: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
   if (axios.isAxiosError(err)) {
-    if (!err.response) return "Can't reach the server. Check your connection.";
-
-    const apiError = (err.response.data as { error?: unknown } | undefined)?.error;
+    if (!err.response) {
+      return err.code === "ECONNABORTED"
+        ? "The server took too long to answer. Please try again."
+        : "Can't reach the server. Check your connection.";
+    }
+    const apiError = (err.response.data as { error?: unknown } | undefined)
+      ?.error;
     if (typeof apiError === "string") return apiError;
 
     if (apiError && typeof apiError === "object") {
@@ -105,7 +116,8 @@ export function getErrorMessage(err: unknown, fallback = "Something went wrong. 
         formErrors?: string[];
         fieldErrors?: Record<string, string[] | undefined>;
       };
-      const first = formErrors?.[0] ?? Object.values(fieldErrors ?? {}).flat()[0];
+      const first =
+        formErrors?.[0] ?? Object.values(fieldErrors ?? {}).flat()[0];
       if (first) return first;
     }
   }

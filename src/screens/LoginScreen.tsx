@@ -44,13 +44,15 @@ export default function LoginScreen({ onForgotPassword }: LoginScreenProps) {
 
   return (
     <View className="flex-1 bg-background">
-      <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom", "left", "right"]}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <ScrollView
             contentContainerClassName="flex-grow justify-center px-6 py-10"
+            // Tablet / landscape: a centered form, not stretched across the screen.
+            contentContainerStyle={{ width: "100%", maxWidth: 440, alignSelf: "center" }}
             keyboardShouldPersistTaps="handled"
           >
             <Text

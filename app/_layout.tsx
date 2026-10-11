@@ -7,6 +7,8 @@ import { useAuth } from "../src/context/AuthContext";
 import { useThemeMode } from "../src/context/ThemeContext";
 import { useStackScreenOptions } from "../src/navigation/useStackScreenOptions";
 import AppProviders from "../src/providers/AppProviders";
+import AppErrorBoundary from "../src/components/AppErrorBoundary";
+import ConnectionBanner from "../src/components/ConnectionBanner";
 
 // Keep the splash screen up until the saved session has been checked.
 SplashScreen.preventAutoHideAsync();
@@ -14,8 +16,11 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   return (
     <AppProviders>
-      <SplashScreenController />
-      <RootNavigator />
+      <AppErrorBoundary>
+        <SplashScreenController />
+        <RootNavigator />
+      </AppErrorBoundary>
+      <ConnectionBanner />
       <ThemedStatusBar />
     </AppProviders>
   );
@@ -59,6 +64,10 @@ function RootNavigator() {
 
       <Stack.Protected guard={signedIn && appRole === "cashier"}>
         <Stack.Screen name="cashier" />
+      </Stack.Protected>
+      
+      <Stack.Protected guard={signedIn && appRole === "kitchen"}>
+        <Stack.Screen name="kitchen" />
       </Stack.Protected>
 
       <Stack.Protected guard={signedIn && appRole === "unsupported"}>

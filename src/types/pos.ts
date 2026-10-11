@@ -277,3 +277,18 @@ export interface OrderPayments {
   balanceDue: number;
   orderTotal: number;
 }
+
+
+// ── Inventory (kitchen wastage) ──
+
+/** GET /inventory — one stock item (ingredient) of the outlet. */
+export interface StockItem {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: number;
+  minStockLevel: number;
+  isLowStock: boolean;
+  isOutOfStock: boolean;
+  categoryName: string | null;
+}

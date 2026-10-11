@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 import { Avatar, Button, Dialog, Portal, SegmentedButtons, Text } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../context/AuthContext";
 import { useThemeMode, type ThemeMode } from "../context/ThemeContext";
@@ -18,6 +19,7 @@ function initials(name: string | undefined): string {
 /** Profile, theme and logout — shared by waiter and cashier. */
 export default function SettingsScreen() {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { user, role, activeOutlet, logout } = useAuth();
   const { mode, setMode } = useThemeMode();
 
@@ -31,7 +33,17 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="gap-6 px-4 pb-10 pt-2">
+      <ScrollView
+        contentContainerClassName="gap-6 px-4 pb-10 pt-2"
+        // Tablet / landscape: a centered column instead of stretching edge to edge.
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 600,
+          alignSelf: "center",
+          paddingLeft: insets.left + 16,
+          paddingRight: insets.right + 16,
+        }}
+      >
         {/* Profile */}
         <View
           className="flex-row items-center gap-4 rounded-2xl p-4"

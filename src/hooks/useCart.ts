@@ -2,7 +2,7 @@ import { useCallback, useMemo, useReducer } from "react";
 
 import { roundMoney } from "../lib/pos";
 import type { OrderItemInput } from "../types/pos";
-
+import { haptics } from "../lib/haptics";
 export interface CartLine {
   key: string;
   productId: string;
@@ -22,7 +22,8 @@ type Action =
   | { type: "note"; key: string; note: string }
   | { type: "clear" };
 
-const lineKey = (productId: string, variantId?: string) => `${productId}::${variantId ?? ""}`;
+const lineKey = (productId: string, variantId?: string) =>
+  `${productId}::${variantId ?? ""}`;
 
 function reducer(lines: CartLine[], action: Action): CartLine[] {
   switch (action.type) {
@@ -30,16 +31,24 @@ function reducer(lines: CartLine[], action: Action): CartLine[] {
       const key = lineKey(action.line.productId, action.line.variantId);
       const existing = lines.find((l) => l.key === key);
       if (existing) {
-        return lines.map((l) => (l.key === key ? { ...l, quantity: l.quantity + 1 } : l));
+        return lines.map((l) =>
+          l.key === key ? { ...l, quantity: l.quantity + 1 } : l,
+        );
       }
       return [...lines, { ...action.line, key, quantity: 1, note: "" }];
     }
     case "change":
       return lines
-        .map((l) => (l.key === action.key ? { ...l, quantity: l.quantity + action.delta } : l))
+        .map((l) =>
+          l.key === action.key
+            ? { ...l, quantity: l.quantity + action.delta }
+            : l,
+        )
         .filter((l) => l.quantity > 0);
     case "note":
-      return lines.map((l) => (l.key === action.key ? { ...l, note: action.note } : l));
+      return lines.map((l) =>
+        l.key === action.key ? { ...l, note: action.note } : l,
+      );
     case "clear":
       return [];
   }
@@ -48,22 +57,40 @@ function reducer(lines: CartLine[], action: Action): CartLine[] {
 /** Local cart for building an order (dine-in or takeaway). */
 export function useCart() {
   const [lines, dispatch] = useReducer(reducer, []);
-
-  const add = useCallback((line: NewCartLine) => dispatch({ type: "add", line }), []);
-  const increment = useCallback((key: string) => dispatch({ type: "change", key, delta: 1 }), []);
-  const decrement = useCallback((key: string) => dispatch({ type: "change", key, delta: -1 }), []);
-  const setNote = useCallback((key: string, note: string) => dispatch({ type: "note", key, note }), []);
+  const add = useCallback((line: NewCartLine) => {
+    haptics.tap();
+    dispatch({ type: "add", line });
+  }, []);
+  const increment = useCallback(
+    (key: string) => dispatch({ type: "change", key, delta: 1 }),
+    [],
+  );
+  const decrement = useCallback(
+    (key: string) => dispatch({ type: "change", key, delta: -1 }),
+    [],
+  );
+  const setNote = useCallback(
+    (key: string, note: string) => dispatch({ type: "note", key, note }),
+    [],
+  );
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
 
   const subtotal = useMemo(
-    () => roundMoney(lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0)),
+    () =>
+      roundMoney(lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0)),
     [lines],
   );
-  const itemCount = useMemo(() => lines.reduce((sum, l) => sum + l.quantity, 0), [lines]);
+  const itemCount = useMemo(
+    () => lines.reduce((sum, l) => sum + l.quantity, 0),
+    [lines],
+  );
 
   /** How many of a product (all sizes) are in the cart — for the badge on the menu. */
   const quantityOf = useCallback(
-    (productId: string) => lines.filter((l) => l.productId === productId).reduce((s, l) => s + l.quantity, 0),
+    (productId: string) =>
+      lines
+        .filter((l) => l.productId === productId)
+        .reduce((s, l) => s + l.quantity, 0),
     [lines],
   );
 
@@ -88,7 +115,19 @@ export function useCart() {
     [lines],
   );
 
-  return { lines, subtotal, itemCount, add, increment, decrement, decrementProduct, setNote, clear, quantityOf, toOrderItems };
+  return {
+    lines,
+    subtotal,
+    itemCount,
+    add,
+    increment,
+    decrement,
+    decrementProduct,
+    setNote,
+    clear,
+    quantityOf,
+    toOrderItems,
+  };
 }
 
 export type Cart = ReturnType<typeof useCart>;
