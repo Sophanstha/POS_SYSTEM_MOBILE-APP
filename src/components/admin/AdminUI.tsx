@@ -11,11 +11,15 @@ import {
   type TextInputProps,
 } from "react-native";
 import { Modal, Portal } from "react-native-paper";
+import { DatePickerModal, en, registerTranslation } from "react-native-paper-dates";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeyboardHeight } from "../../hooks/useKeyboardHeight";
 import { useLayout } from "../../hooks/useLayout";
+import { toDateParam } from "../../lib/pos";
 import { useDashboardPalette } from "../../theme/dashboardPalette";
+
+registerTranslation("en", en);
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -241,6 +245,9 @@ const RevealFocusedInput = createContext<() => void>(() => {});
 
 /** For custom inputs inside AdminDialog: call it from onFocus (AdminField already does). */
 export const useRevealFocusedInput = () => useContext(RevealFocusedInput);
+
+/** Screens with forms (Settings) give their own "scroll to the focused field" here. */
+export const RevealFocusedInputProvider = RevealFocusedInput.Provider;
 
 /** Space kept between the field being typed in and the edge of the form. */
 const REVEAL_MARGIN = 16;
@@ -548,6 +555,220 @@ export function ChoiceField<T extends string>({
           );
         })}
       </View>
+    </View>
+  );
+}
+
+/** "2026-10-11" → "Oct 11, 2026" (no time-zone shift). */
+export function formatDay(day: string): string {
+  const [y, m, d] = day.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return day;
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Labelled date box; tap to pick a day from a calendar. `value` is "2026-10-11". */
+export function DateField({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  disabled?: boolean;
+  onChange: (day: string) => void;
+}) {
+  const d = useDashboardPalette();
+  const [open, setOpen] = useState(false);
+  const [y, m, day] = value.split("-").map(Number);
+
+  return (
+    <View>
+      <FieldLabel>{label}</FieldLabel>
+      <Pressable
+        onPress={() => setOpen(true)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${formatDay(value)}`}
+        className="flex-row items-center gap-2 rounded-lg px-3 py-3 active:opacity-70"
+        style={{ backgroundColor: d.input.bg, borderWidth: 1, borderColor: d.input.border, opacity: disabled ? 0.6 : 1 }}
+      >
+        <MaterialCommunityIcons name="calendar" size={16} color={d.input.placeholder} />
+        <Text style={{ flex: 1, color: d.input.text, fontSize: 14 }}>{formatDay(value)}</Text>
+        <MaterialCommunityIcons name="chevron-down" size={18} color={d.input.placeholder} />
+      </Pressable>
+      <DatePickerModal
+        locale="en"
+        mode="single"
+        visible={open}
+        date={y && m && day ? new Date(y, m - 1, day) : new Date()}
+        onDismiss={() => setOpen(false)}
+        onConfirm={({ date }) => {
+          setOpen(false);
+          if (date) onChange(toDateParam(date));
+        }}
+      />
+    </View>
+  );
+}
+
+/**
+ * Labelled select box (the web's dropdowns) for long lists: tap to open a searchable
+ * list right under it, tap an option to choose it.
+ */
+export function PickerField({
+  label,
+  placeholder,
+  value,
+  options,
+  icon,
+  searchable,
+  searchPlaceholder = "Search...",
+  disabled,
+  emptyText = "Nothing to choose from.",
+  onChange,
+}: {
+  label?: string;
+  placeholder: string;
+  value: string;
+  options: { value: string; label: string; hint?: string; icon?: IconName }[];
+  /** Icon at the start of the box. */
+  icon?: IconName;
+  /** Search box at the top of the list (default: only for more than 6 options). */
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  disabled?: boolean;
+  emptyText?: string;
+  onChange: (value: string) => void;
+}) {
+  const d = useDashboardPalette();
+  const reveal = useRevealFocusedInput();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selected = options.find((o) => o.value === value);
+  const q = search.trim().toLowerCase();
+  const shown = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+
+  return (
+    <View>
+      {label ? <FieldLabel>{label}</FieldLabel> : null}
+      <Pressable
+        onPress={() => {
+          setOpen((o) => !o);
+          setSearch("");
+        }}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open, disabled }}
+        className="flex-row items-center gap-2 rounded-lg px-3 py-3 active:opacity-70"
+        style={{
+          backgroundColor: d.input.bg,
+          borderWidth: 1,
+          borderColor: open ? d.hero.bg : d.input.border,
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        {icon ? <MaterialCommunityIcons name={icon} size={16} color={d.input.placeholder} /> : null}
+        <Text numberOfLines={1} style={{ flex: 1, color: selected ? d.input.text : d.input.placeholder, fontSize: 14 }}>
+          {selected ? selected.label : placeholder}
+        </Text>
+        {selected?.hint ? <Text style={{ color: d.muted, fontSize: 12 }}>{selected.hint}</Text> : null}
+        <MaterialCommunityIcons name={open ? "chevron-up" : "chevron-down"} size={18} color={d.input.placeholder} />
+      </Pressable>
+
+      {open ? (
+        <View className="mt-1.5 overflow-hidden rounded-lg" style={{ borderWidth: 1, borderColor: d.border, backgroundColor: d.card }}>
+          {(searchable ?? options.length > 6) ? (
+            <View className="flex-row items-center gap-2 px-3" style={{ borderBottomWidth: 1, borderColor: d.border }}>
+              <MaterialCommunityIcons name="magnify" size={16} color={d.input.placeholder} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                onFocus={reveal}
+                placeholder={searchPlaceholder}
+                placeholderTextColor={d.input.placeholder}
+                autoCorrect={false}
+                style={{ flex: 1, color: d.input.text, fontSize: 13, paddingVertical: 8 }}
+              />
+            </View>
+          ) : null}
+          <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            {shown.length === 0 ? (
+              <Text style={{ color: d.muted, fontSize: 13, padding: 12 }}>{options.length ? "No matches." : emptyText}</Text>
+            ) : (
+              shown.map((o) => {
+                const active = o.value === value;
+                return (
+                  <Pressable
+                    key={o.value}
+                    onPress={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    className="flex-row items-center gap-2 px-3 py-2.5"
+                    style={({ pressed }) => ({ backgroundColor: active ? d.emerald.tile : pressed ? d.pressed : "transparent" })}
+                  >
+                    {o.icon ? <MaterialCommunityIcons name={o.icon} size={15} color={active ? d.link : d.muted} /> : null}
+                    <Text numberOfLines={1} style={{ flex: 1, color: active ? d.link : d.title, fontSize: 13, fontWeight: active ? "700" : "500" }}>
+                      {o.label}
+                    </Text>
+                    {o.hint ? <Text style={{ color: d.muted, fontSize: 12 }}>{o.hint}</Text> : null}
+                    {active ? <MaterialCommunityIcons name="check" size={16} color={d.link} /> : null}
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Small "+ New category" form under a category choice: name box + Add / cancel. */
+export function NewCategoryInput({
+  busy,
+  onAdd,
+  onCancel,
+}: {
+  busy?: boolean;
+  onAdd: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const d = useDashboardPalette();
+  const reveal = useRevealFocusedInput();
+  const [name, setName] = useState("");
+
+  return (
+    <View className="mt-2 flex-row items-center gap-2">
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        onFocus={reveal}
+        autoFocus
+        placeholder="New category name"
+        placeholderTextColor={d.input.placeholder}
+        onSubmitEditing={() => name.trim() && onAdd(name.trim())}
+        returnKeyType="done"
+        editable={!busy}
+        style={{
+          flex: 1,
+          backgroundColor: d.input.bg,
+          borderWidth: 1,
+          borderColor: d.hero.bg,
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          color: d.input.text,
+          fontSize: 14,
+        }}
+      />
+      <AdminButton label="Add" icon="check" variant="primary" loading={busy} disabled={!name.trim()} onPress={() => onAdd(name.trim())} />
+      <Pressable onPress={onCancel} disabled={busy} accessibilityRole="button" accessibilityLabel="Cancel" hitSlop={8} className="p-1 active:opacity-60">
+        <MaterialCommunityIcons name="close" size={20} color={d.muted} />
+      </Pressable>
     </View>
   );
 }

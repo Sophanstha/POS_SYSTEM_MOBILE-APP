@@ -1,5 +1,5 @@
-import SettingsScreen from "../../src/screens/SettingScreen";
+import ManagerSettingsScreen from "../../src/screens/ManagerSettingsScreen";
 
 export default function ManagerSettings() {
-  return <SettingsScreen />;
+  return <ManagerSettingsScreen />;
 }

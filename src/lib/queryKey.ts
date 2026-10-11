@@ -37,6 +37,31 @@ export const queryKeys = {
   staff: (outletId: string) => ["staff", outletId] as const,
   productsAll: (outletId: string) => ["products", outletId] as const,
   menuItems: (outletId: string) => ["menuItems", outletId] as const,
+  expenses: (
+    outletId: string,
+    categoryId?: string,
+    startDate?: string,
+    endDate?: string,
+  ) =>
+    [
+      "expenses",
+      outletId,
+      categoryId ?? "",
+      startDate ?? "",
+      endDate ?? "",
+    ] as const,
+  expensesAll: (outletId: string) => ["expenses", outletId] as const,
+  expenseCategories: (outletId: string) =>
+    ["expenseCategories", outletId] as const,
+  inventory: (outletId: string) => ["inventory", outletId] as const,
+  stockCategories: (outletId: string) => ["stockCategories", outletId] as const,
+  stockMovements: (outletId: string, stockItemId: string) =>
+    ["stockMovements", outletId, stockItemId] as const,
+  stockMovementsAll: (outletId: string) =>
+    ["stockMovements", outletId] as const,
+  recipeBook: (outletId: string) => ["recipeBook", outletId] as const,
+  profitReport: (outletId: string, startMonth?: string, endMonth?: string) =>
+    ["profitReport", outletId, startMonth ?? "", endMonth ?? ""] as const,
 };
 
 /** How often live screens poll — same as the web POS. */

@@ -43,6 +43,10 @@ interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (code: string) => boolean;
+  /** After editing the profile in Settings: shows the new name / email everywhere. */
+  updateUser: (changes: Partial<Pick<AuthUser, "name" | "email">>) => Promise<void>;
+  /** After renaming the outlet in Settings. */
+  renameOutlet: (outletId: string, name: string) => Promise<void>;
 }
 
 const SIGNED_OUT: AuthState = {
@@ -157,6 +161,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state.role, state.permissions],
   );
 
+  const updateUser = useCallback(
+    async (changes: Partial<Pick<AuthUser, "name" | "email">>) => {
+      if (!state.user) return;
+      const user = { ...state.user, ...changes };
+      setState((prev) => ({ ...prev, user }));
+      await saveSession({ user, outlets: state.outlets, activeOutletId: state.activeOutletId }).catch(() => {});
+    },
+    [state.user, state.outlets, state.activeOutletId],
+  );
+
+  const renameOutlet = useCallback(
+    async (outletId: string, name: string) => {
+      const outlets = state.outlets.map((o) => (o.id === outletId ? { ...o, name } : o));
+      setState((prev) => ({ ...prev, outlets }));
+      if (state.user) {
+        await saveSession({ user: state.user, outlets, activeOutletId: state.activeOutletId }).catch(() => {});
+      }
+    },
+    [state.user, state.outlets, state.activeOutletId],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
@@ -165,8 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       hasPermission,
+      updateUser,
+      renameOutlet,
     }),
-    [state, login, logout, hasPermission],
+    [state, login, logout, hasPermission, updateUser, renameOutlet],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

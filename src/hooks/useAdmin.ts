@@ -1,8 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createCategory, createProduct, createSize, createStaff, createTable, deleteCategory, deleteProduct, deleteSize, deleteTable, getManagerDashboard, getMenuItems, getOrganization, getPaymentLedger, getSalesTrend, getStaff, removeStaff, renameCategory, setStaffActive, updateProduct, updateSize, updateStaffInfo, updateStaffRole, updateTable } from "../api/admin";
+import { changeStock, createCategory, createExpense, createExpenseCategory, createInventoryItem, createProduct, createSize, createStaff, createStockCategory, createTable, deleteCategory, deleteExpense, deleteInventoryItem, deleteProduct, deleteRecipe, deleteSize, deleteTable, getExpenseCategories, getExpenses, getInventory, getManagerDashboard, getMenuItems, getOrganization, getPaymentLedger, getProfitReport, getRecipeBook, getSalesTrend, getStaff, getStockCategories, getStockMovements, removeStaff, renameCategory, saveRecipe, setStaffActive, updateExpense, updateInventoryItem, updateProduct, updateSize, updateStaffInfo, updateStaffRole, updateAccount, updateOutletSettings, updateTable } from "../api/admin";
 import { queryKeys } from "../lib/queryKey";
-import type { MenuItem, MenuItemForm, PaymentFilters, StaffForm, StaffMember, TableForm, TrendPeriod } from "../types/admin";
+import type { AccountForm, Expense, ExpenseFilters, ExpenseForm, InventoryItem, InventoryItemForm, MenuItem, MenuItemForm, OutletForm, PaymentFilters, ProfitRange, RecipeIngredient, RecipeRow, StaffForm, StaffMember, StockChange, TableForm, TrendPeriod } from "../types/admin";
 import { useInvalidate, useOutletId } from "./shared";
 import { setTableStatus } from "../api/pos";
 import { Category, DiningTable } from "../types/pos";
@@ -244,5 +244,218 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: deleteCategory,
     onSettled: () => invalidate(queryKeys.categories, queryKeys.menuItems, queryKeys.productsAll),
+  });
+}
+
+// ── Expenses ──
+
+/** Expenses + totals for the chosen category / dates. Keeps the old list while the next loads. */
+export function useExpenses(filters: ExpenseFilters) {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.expenses(outletId ?? "", filters.categoryId, filters.startDate, filters.endDate),
+    queryFn: () => getExpenses(filters),
+    enabled: !!outletId,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useExpenseCategories() {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.expenseCategories(outletId ?? ""),
+    queryFn: getExpenseCategories,
+    enabled: !!outletId,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCreateExpenseCategory() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: createExpenseCategory,
+    onSettled: () => invalidate(queryKeys.expenseCategories),
+  });
+}
+
+/** Add an expense, or save changes to one. */
+export function useSaveExpense() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: ({ expense, form }: { expense: Expense | null; form: ExpenseForm }) =>
+      expense ? updateExpense(expense.id, form) : createExpense(form),
+    onSettled: () => invalidate(queryKeys.expensesAll),
+  });
+}
+
+export function useDeleteExpense() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: deleteExpense,
+    onSettled: () => invalidate(queryKeys.expensesAll),
+  });
+}
+
+
+// ── Inventory ──
+
+/** Everything that shows stock: inventory, kitchen wastage list, dashboard alerts, menu "out of stock". */
+const STOCK_KEYS = [
+  queryKeys.inventory,
+  queryKeys.stockItems,
+  queryKeys.stockMovementsAll,
+  queryKeys.managerDashboard,
+  queryKeys.menuItems,
+  queryKeys.productsAll,
+  queryKeys.variantsAll,
+];
+
+/** Every raw ingredient of the active outlet. */
+export function useInventory() {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.inventory(outletId ?? ""),
+    queryFn: getInventory,
+    enabled: !!outletId,
+    staleTime: 15_000,
+  });
+}
+
+export function useStockCategories() {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.stockCategories(outletId ?? ""),
+    queryFn: getStockCategories,
+    enabled: !!outletId,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCreateStockCategory() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: createStockCategory,
+    onSettled: () => invalidate(queryKeys.stockCategories),
+  });
+}
+
+/** Add an ingredient, or save changes to one. */
+export function useSaveInventoryItem() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: ({ item, form }: { item: InventoryItem | null; form: InventoryItemForm }) =>
+      item ? updateInventoryItem(item.id, form) : createInventoryItem(form),
+    onSettled: () => invalidate(...STOCK_KEYS),
+  });
+}
+
+export function useDeleteInventoryItem() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: deleteInventoryItem,
+    onSettled: () => invalidate(...STOCK_KEYS, queryKeys.recipeBook),
+  });
+}
+
+/** Restock or recount. A purchase with a cost also shows up in Expenses. */
+export function useChangeStock() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: ({ itemId, change }: { itemId: string; change: StockChange }) => changeStock(itemId, change),
+    onSettled: () => invalidate(...STOCK_KEYS, queryKeys.expensesAll),
+  });
+}
+
+/** Stock history of one ingredient; loads only while its row is open. */
+export function useStockMovements(stockItemId: string | null) {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.stockMovements(outletId ?? "", stockItemId ?? ""),
+    queryFn: () => getStockMovements(stockItemId!),
+    enabled: !!outletId && !!stockItemId,
+    staleTime: 15_000,
+  });
+}
+
+
+// ── Recipes ──
+
+/** Every menu item / size with its recipe. */
+export function useRecipeBook() {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.recipeBook(outletId ?? ""),
+    queryFn: getRecipeBook,
+    enabled: !!outletId,
+    staleTime: 60_000,
+  });
+}
+
+/** Recipes decide what is "out of stock", so the menus and kitchen refresh too. */
+const RECIPE_KEYS = [queryKeys.recipeBook, queryKeys.menuItems, queryKeys.productsAll, queryKeys.variantsAll, queryKeys.wastageMenuItems];
+
+export function useSaveRecipe() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: ({ row, ingredients }: { row: RecipeRow; ingredients: RecipeIngredient[] }) => saveRecipe(row, ingredients),
+    onSettled: () => invalidate(...RECIPE_KEYS),
+  });
+}
+
+export function useDeleteRecipe() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: deleteRecipe,
+    onSettled: () => invalidate(...RECIPE_KEYS),
+  });
+}
+
+
+// ── Analytics ──
+
+/** Profit & expense report of the active outlet. Keeps the old numbers while a new range loads. */
+export function useProfitReport(range: ProfitRange) {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.profitReport(outletId ?? "", range.startMonth, range.endMonth),
+    queryFn: () => getProfitReport(range),
+    enabled: !!outletId,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+
+// ── Settings ──
+
+/** Settings → Account (name, email, password). */
+export function useUpdateAccount() {
+  return useMutation({ mutationFn: (form: AccountForm) => updateAccount(form) });
+}
+
+/** Settings → Outlet. Bills, receipts and the menu header read the outlet again. */
+export function useUpdateOutlet() {
+  const invalidate = useInvalidate();
+
+  return useMutation({
+    mutationFn: ({ outletId, form }: { outletId: string; form: OutletForm }) => updateOutletSettings(outletId, form),
+    onSettled: () => invalidate(queryKeys.outlet, queryKeys.organization),
   });
 }
