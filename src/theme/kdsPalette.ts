@@ -24,6 +24,23 @@ const DARK = {
   startButton: { bg: "rgba(0,0,0,0.2)", border: "rgba(255,255,255,0.1)", text: "#a1a1aa" },
   doneText: "#0a1a0f",
   readyButton: { bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)", text: "#4ade80" },
+  /** "Report Inventory Wastage" dialog. */
+  modal: {
+    bg: "#1c1c1f",
+    border: "#3f3f46",
+    headerBg: "#232326",
+    headerBorder: "#27272a",
+    title: "#ffffff",
+    close: "#71717a",
+    label: "#a1a1aa",
+    input: { bg: "#18181b", border: "#3f3f46", focus: "rgba(229,184,59,0.6)", text: "#ffffff", placeholder: "#71717a" },
+    tabActive: { bg: "rgba(229,184,59,0.2)", border: "rgba(229,184,59,0.5)", text: "#e5b83b" },
+    tabIdle: { border: "#3f3f46", text: "#a1a1aa" },
+    rowActive: "rgba(229,184,59,0.12)",
+    check: "#e5b83b",
+    rowBorder: "#27272a",
+    cancel: { border: "#3f3f46", text: "#a1a1aa" },
+  },
   column: {
     new: { bg: "rgba(229,184,59,0.08)", border: "rgba(229,184,59,0.15)", text: "#ffffff", countBg: "rgba(229,184,59,0.15)", countText: "#e5b83b" },
     preparing: { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.15)", text: "#ffffff", countBg: "rgba(59,130,246,0.15)", countText: "#60a5fa" },
@@ -53,6 +70,22 @@ const LIGHT: typeof DARK = {
   startButton: { bg: "rgba(255,255,255,0.6)", border: "rgba(0,0,0,0.1)", text: "#404040" },
   doneText: "#ffffff",
   readyButton: { bg: "#f0fdf4", border: "#bbf7d0", text: "#15803d" },
+  modal: {
+    bg: "#ffffff",
+    border: "#e5e5e5",
+    headerBg: "#fafafa",
+    headerBorder: "#e5e5e5",
+    title: "#171717",
+    close: "#a3a3a3",
+    label: "#737373",
+    input: { bg: "#ffffff", border: "#e5e5e5", focus: "#a3a3a3", text: "#262626", placeholder: "#a3a3a3" },
+    tabActive: { bg: "#262626", border: "#262626", text: "#ffffff" },
+    tabIdle: { border: "#e5e5e5", text: "#737373" },
+    rowActive: "#f5f5f5",
+    check: "#262626",
+    rowBorder: "#f5f5f5",
+    cancel: { border: "#e5e5e5", text: "#525252" },
+  },
   column: {
     new: { bg: "rgba(229,184,59,0.12)", border: "rgba(229,184,59,0.25)", text: "#451a03", countBg: "rgba(229,184,59,0.2)", countText: "#92400e" },
     preparing: { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.25)", text: "#172554", countBg: "rgba(59,130,246,0.2)", countText: "#1e40af" },
@@ -74,4 +107,4 @@ export const KDS = {
   red: "#ef4444",
   gold: "#e5b83b",
   dineInText: "#60a5fa",
-};
+};

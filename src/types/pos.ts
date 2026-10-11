@@ -292,3 +292,12 @@ export interface StockItem {
   isOutOfStock: boolean;
   categoryName: string | null;
 }
+
+/** GET /recipe/{productId} — one ingredient of a dish, per one dish. */
+export interface RecipeItem {
+  id: string;
+  stockItemId: string;
+  stockItemName: string;
+  unit: string;
+  quantity: number;
+}

@@ -18,6 +18,7 @@ import type {
   PaymentStatus,
   Product,
   ProductVariant,
+  RecipeItem,
   StockItem,
   TableOrdersResponse,
   TableStatus,
@@ -231,3 +232,13 @@ export async function reportWastage(
 ): Promise<void> {
   await api.post(`/inventory/${stockItemId}/wastage`, input);
 }
+
+export async function getRecipeItems(productId: string, variantId?: string | null): Promise<RecipeItem[]> {
+  const { data } = await api.get<{ recipe: { items: RecipeItem[] } | null }>(`/recipe/${productId}`, {
+    params: variantId ? { variantId } : undefined,
+  });
+  return data.recipe?.items ?? [];
+}
+
+
+

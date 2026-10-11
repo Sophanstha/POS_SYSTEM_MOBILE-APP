@@ -25,6 +25,18 @@ export const queryKeys = {
     ["orderPayments", outletId, orderId] as const,
   orderPaymentsAll: (outletId: string) => ["orderPayments", outletId] as const,
   stockItems: (outletId: string) => ["stockItems", outletId] as const,
+  wastageMenuItems: (outletId: string) =>
+    ["wastageMenuItems", outletId] as const,
+  organization: (outletId: string) => ["organization", outletId] as const,
+  managerDashboard: (outletId: string) =>
+    ["managerDashboard", outletId] as const,
+  salesTrend: (outletId: string, period: string) =>
+    ["salesTrend", outletId, period] as const,
+  paymentLedger: (outletId: string, date?: string, method?: string) =>
+    ["paymentLedger", outletId, date ?? "", method ?? ""] as const,
+  staff: (outletId: string) => ["staff", outletId] as const,
+  productsAll: (outletId: string) => ["products", outletId] as const,
+  menuItems: (outletId: string) => ["menuItems", outletId] as const,
 };
 
 /** How often live screens poll — same as the web POS. */

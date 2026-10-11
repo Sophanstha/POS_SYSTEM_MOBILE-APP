@@ -31,13 +31,18 @@ export interface RefreshResponse {
 }
 
 /** Which part of the mobile app a user gets. */
-export type AppRole = "waiter" | "cashier" | "kitchen" | "unsupported";
+export type AppRole =
+  | "waiter"
+  | "cashier"
+  | "kitchen"
+  | "manager"
+  | "unsupported";
 
 export function toAppRole(role: string | null): AppRole {
   if (role === "Waiter") return "waiter";
   // The web middleware sends "All Rounder" to the cashier area too.
   if (role === "Cashier" || role === "All Rounder") return "cashier";
-  // if (role === "Kitchen") return "kitchen";
-    if (role === "Kitchen Crew") return "kitchen";
+  if (role === "Kitchen Crew") return "kitchen";
+  if (role === "Manager") return "manager";
   return "unsupported";
 }

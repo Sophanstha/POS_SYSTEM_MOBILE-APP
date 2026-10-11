@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { getStockItems, reportWastage, setKotItemStatus } from "../api/pos";
+import { getProducts, getRecipeItems, getStockItems, getVariants, reportWastage, setKotItemStatus } from "../api/pos";
 import { orderItemName } from "../lib/pos";
 import { queryKeys } from "../lib/queryKey";
 import type { KotStatus, KotTicket } from "../types/pos";
@@ -132,12 +132,67 @@ export function useStockItems(enabled: boolean) {
   });
 }
 
+/** A dish in the wastage form: one entry per size, like the web ("Pizza (Large)"). */
+export interface WastageMenuItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  name: string;
+}
+
+/** Dishes for the "Menu Item" tab (loaded only when that tab is opened). */
+export function useWastageMenuItems(enabled: boolean) {
+  const outletId = useOutletId();
+
+  return useQuery({
+    queryKey: queryKeys.wastageMenuItems(outletId ?? ""),
+    queryFn: async (): Promise<WastageMenuItem[]> => {
+      const products = await getProducts();
+      const lists = await Promise.all(
+        products.map(async (p) => {
+          const variants = await getVariants(p.id).catch(() => []);
+          return variants.length > 0
+            ? variants.map((v) => ({ id: `${p.id}_${v.id}`, productId: p.id, variantId: v.id, name: `${p.name} (${v.label})` }))
+            : [{ id: p.id, productId: p.id, variantId: null, name: p.name }];
+        }),
+      );
+      return lists.flat();
+    },
+    enabled: enabled && !!outletId,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Thrown when a dish has no recipe, so there is nothing to take off the stock. */
+export class NoRecipeError extends Error {
+  constructor() {
+    super("No recipe found for this menu item. Cannot deduct ingredients.");
+  }
+}
+
+export type WastageInput =
+  | { kind: "ingredient"; stockItemId: string; quantity: number; note: string }
+  | { kind: "menu_item"; item: WastageMenuItem; dishes: number; note: string };
+
+/**
+ * Ingredient: take it off the stock. Menu item (like the web): read the dish's recipe
+ * and take every ingredient × number of dishes off the stock.
+ */
 export function useReportWastage() {
   const invalidate = useInvalidate();
 
   return useMutation({
-    mutationFn: ({ stockItemId, quantity, note }: { stockItemId: string; quantity: number; note?: string }) =>
-      reportWastage(stockItemId, { quantity, note }),
+    mutationFn: async (input: WastageInput) => {
+      if (input.kind === "ingredient") {
+        await reportWastage(input.stockItemId, { quantity: input.quantity, note: input.note });
+        return;
+      }
+      const recipe = await getRecipeItems(input.item.productId, input.item.variantId);
+      if (recipe.length === 0) throw new NoRecipeError();
+      await Promise.all(
+        recipe.map((r) => reportWastage(r.stockItemId, { quantity: r.quantity * input.dishes, note: input.note })),
+      );
+    },
     meta: { successHaptic: true },
     onSuccess: () => invalidate(queryKeys.stockItems),
   });

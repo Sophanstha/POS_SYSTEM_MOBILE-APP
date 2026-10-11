@@ -65,9 +65,12 @@ function RootNavigator() {
       <Stack.Protected guard={signedIn && appRole === "cashier"}>
         <Stack.Screen name="cashier" />
       </Stack.Protected>
-      
+
       <Stack.Protected guard={signedIn && appRole === "kitchen"}>
         <Stack.Screen name="kitchen" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && appRole === "manager"}>
+        <Stack.Screen name="manager" />
       </Stack.Protected>
 
       <Stack.Protected guard={signedIn && appRole === "unsupported"}>
