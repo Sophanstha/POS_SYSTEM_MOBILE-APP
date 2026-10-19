@@ -1,0 +1,5 @@
+import TableDetailScreen from "../../../../src/systems/pos/screens/TableDetailScreen";
+
+export default function WaiterTableDetail() {
+  return <TableDetailScreen />;
+}

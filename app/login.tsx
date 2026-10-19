@@ -1,6 +1,8 @@
-import LoginScreen from "../src/screens/LoginScreen";
+import { router } from "expo-router";
+
+import LoginScreen from "../src/shared/screens/LoginScreen";
 
 
 export default function Login() {
-  return <LoginScreen />;
+  return <LoginScreen onForgotPassword={() => router.push("/forgot-password")} />;
 }

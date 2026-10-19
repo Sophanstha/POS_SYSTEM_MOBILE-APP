@@ -5,10 +5,10 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getErrorMessage } from "./src/api/client";
-import FormField from "./src/components/FormField";
-import { useAuth } from "./src/context/AuthContext";
-import { useAppTheme } from "./src/theme/paperTheme";
+import { getErrorMessage } from "./src/shared/api/client";
+import FormField from "./src/shared/components/FormField";
+import { useAuth } from "./src/shared/context/AuthContext";
+import { useAppTheme } from "./src/shared/theme/paperTheme";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
