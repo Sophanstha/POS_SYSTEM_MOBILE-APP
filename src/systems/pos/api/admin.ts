@@ -36,6 +36,7 @@ import type {
   StockMovement,
   TableForm,
   TrendPeriod,
+  LowStockAlert,
 } from "../types/admin";
 import { getProducts, getVariants } from "./pos";
 import { ProductVariant, RecipeItem } from "../types/pos";
@@ -702,4 +703,10 @@ export async function getProfitReportAllOutlets(range: ProfitRange, outletIds: s
     years: [...years.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([year, t]) => ({ year, ...roundTotals(t) })),
     months: [...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, t]) => ({ month, ...roundTotals(t) })),
   };
+}
+
+/** Ingredients at or below their alert level (same list as the web's stock alerts). */
+export async function getStockAlerts(): Promise<LowStockAlert[]> {
+  const { data } = await api.get<{ alerts?: LowStockAlert[] }>("/alert");
+  return data.alerts ?? [];
 }

@@ -66,15 +66,31 @@ export const queryKeys = {
     ["orgOutlets", organizationId] as const,
   orgReport: (organizationId: string, period: string, outletId: string) =>
     ["orgReport", organizationId, period, outletId] as const,
-  branchSummaries: (organizationId: string, period: string, outletIds: string) =>
-    ["branchSummaries", organizationId, period, outletIds] as const,
-  trialStatus: (organizationId: string) => ["trialStatus", organizationId] as const,
+  branchSummaries: (
+    organizationId: string,
+    period: string,
+    outletIds: string,
+  ) => ["branchSummaries", organizationId, period, outletIds] as const,
+  trialStatus: (organizationId: string) =>
+    ["trialStatus", organizationId] as const,
   orgRoles: (organizationId: string) => ["orgRoles", organizationId] as const,
   rolePermissions: (organizationId: string, roleId: string, outletId: string) =>
     ["rolePermissions", organizationId, roleId, outletId] as const,
-  staffAllOutlets: (organizationId: string) => ["staffAllOutlets", organizationId] as const,
-  profitReportAll: (organizationId: string, startMonth?: string, endMonth?: string) =>
-    ["profitReportAll", organizationId, startMonth ?? "", endMonth ?? ""] as const,
+  staffAllOutlets: (organizationId: string) =>
+    ["staffAllOutlets", organizationId] as const,
+  profitReportAll: (
+    organizationId: string,
+    startMonth?: string,
+    endMonth?: string,
+  ) =>
+    [
+      "profitReportAll",
+      organizationId,
+      startMonth ?? "",
+      endMonth ?? "",
+    ] as const,
+  paymentQr: (outletId: string) => ["paymentQr", outletId] as const,
+  stockAlerts: (outletId: string) => ["stockAlerts", outletId] as const,
 };
 
 /** How often live screens poll — same as the web POS. */

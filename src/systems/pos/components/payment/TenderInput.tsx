@@ -4,6 +4,7 @@ import { Button, Chip, HelperText, TextInput } from "react-native-paper";
 import { formatRs, isPlatformMethod, PAYMENT_METHOD_LABEL, quickCashAmounts, type Tender } from "../../lib/pos";
 import { useAppTheme } from "../../../../shared/theme/paperTheme";
 import type { PaymentMethod } from "../../types/pos";
+import PaymentQrPanel from "./PaymentQrPanel";
 
 type TenderInputProps = {
   method: PaymentMethod;
@@ -19,11 +20,13 @@ type TenderInputProps = {
  * Delivery platform: the platform's price. Card / QR need nothing.
  */
 export default function TenderInput({ method, due, value, onChange, tender, disabled }: TenderInputProps) {
-  const theme = useAppTheme();
+   const theme = useAppTheme();
+  if (method === "qr") return <PaymentQrPanel amount={due} />;
   const isCash = method === "cash";
   if (!isCash && !isPlatformMethod(method)) return null;
 
   const showError = !!tender.error && value.trim() !== "";
+  
 
   return (
     <View className="gap-2">

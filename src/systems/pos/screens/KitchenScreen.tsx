@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { useKeepAwake } from "expo-keep-awake";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { Animated, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { Button, Snackbar } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -13,6 +14,7 @@ import { usePosAuth } from "../auth/PosAuthProvider";
 import { useThemeMode } from "../../../shared/context/ThemeContext";
 import { useKitchenBoard, useMoveKitchenItem, type KitchenCard, type KitchenMove, type KitchenStage } from "../hooks/useKitchen";
 import { useLayout } from "../../../shared/hooks/useLayout";
+import { useNewOrderAlert } from "../hooks/useNewOrderAlert";
 import { useKdsPalette, type KdsPalette } from "../theme/kdsPalette";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -39,6 +41,7 @@ function useNow(ms: number): number {
  * Kitchen Display, like the web KDS: every dish is a sticky note in
  * New Orders → Preparing → Ready to Serve. Phone: one column with tabs.
  * Landscape / tablet: the three columns side by side.
+ * New order: bell + buzz + flashing banner; the screen never turns off.
  */
 export default function KitchenScreen() {
   const k = useKdsPalette();
@@ -50,6 +53,10 @@ export default function KitchenScreen() {
   const { query, cards } = useKitchenBoard();
   const move = useMoveKitchenItem();
   const now = useNow(5000);
+  useKeepAwake();
+
+  const [soundOn, setSoundOn] = useState(true);
+  const bell = useNewOrderAlert(query.data, soundOn);
 
   const [tab, setTab] = useState<KitchenStage>("new");
   const [pulling, setPulling] = useState(false);
@@ -132,6 +139,15 @@ export default function KitchenScreen() {
         {canReportWastage ? (
           <HeaderButton k={k} icon="delete-outline" label={isWide ? "Report Wastage" : undefined} onPress={() => setWastageOpen(true)} />
         ) : null}
+        <HeaderButton
+          k={k}
+          icon={soundOn ? "bell-ring-outline" : "bell-off-outline"}
+          accessibilityLabel={soundOn ? "Turn the order bell off" : "Turn the order bell on"}
+          onPress={() => {
+            setMessage(soundOn ? "Order bell off. New orders still buzz and flash." : "Order bell on");
+            setSoundOn((on) => !on);
+          }}
+        />
         <HeaderButton
           k={k}
           icon={isDark ? "white-balance-sunny" : "moon-waning-crescent"}
@@ -217,6 +233,16 @@ export default function KitchenScreen() {
         {header}
       </SafeAreaView>
 
+      {bell.unseen > 0 ? (
+        <NewOrderBanner
+          count={bell.unseen}
+          onPress={() => {
+            bell.markSeen();
+            setTab("new");
+          }}
+        />
+      ) : null}
+
       {body}
 
       <WastageSheet visible={wastageOpen} onDismiss={() => setWastageOpen(false)} onReported={setMessage} />
@@ -225,6 +251,44 @@ export default function KitchenScreen() {
         {message ?? ""}
       </Snackbar>
     </View>
+  );
+}
+
+/** Flashing strip under the header. Tap = stop the bell and show New Orders. */
+function NewOrderBanner({ count, onPress }: { count: number; onPress: () => void }) {
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.55, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const label = count === 1 ? "1 new order" : `${count} new orders`;
+
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label}. Tap to stop the bell`}>
+      <Animated.View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          backgroundColor: "#e5b83b",
+          opacity: pulse,
+        }}
+      >
+        <MaterialCommunityIcons name="bell-ring" size={18} color="#451a03" />
+        <Text style={{ color: "#451a03", fontSize: 14, fontWeight: "800" }}>{label} · Tap to stop the bell</Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 

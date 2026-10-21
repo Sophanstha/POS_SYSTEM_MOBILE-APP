@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { changeStock, createCategory, createExpense, createExpenseCategory, createInventoryItem, createProduct, createSize, createStaff, createStockCategory, createTable, deleteCategory, deleteExpense, deleteInventoryItem, deleteProduct, deleteRecipe, deleteSize, deleteTable, getExpenseCategories, getExpenses, getInventory, getManagerDashboard, getMenuItems, getOrganization, getPaymentLedger, getProfitReport, getRecipeBook, getSalesTrend, getStaff, getStockCategories, getStockMovements, removeStaff, renameCategory, saveRecipe, setStaffActive, updateExpense, updateInventoryItem, updateProduct, updateSize, updateStaffInfo, updateStaffRole, updateAccount, updateOutletSettings, updateTable, getOrgOutlets, getOrgReport, getBranchSummaries, getTrialStatus, createOrgOutlet, updateOrgOutlet, setOrgOutletActive, setKitchenWorkflow, deleteOrgOutlet, getOrgRoles, getRolePermissions, updateOrganization, removeOrganizationLogo, getStaffAllOutlets, getProfitReportAllOutlets } from "../api/admin";
+import { changeStock, createCategory, createExpense, createExpenseCategory, createInventoryItem, createProduct, createSize, createStaff, createStockCategory, createTable, deleteCategory, deleteExpense, deleteInventoryItem, deleteProduct, deleteRecipe, deleteSize, deleteTable, getExpenseCategories, getExpenses, getInventory, getManagerDashboard, getMenuItems, getOrganization, getPaymentLedger, getProfitReport, getRecipeBook, getSalesTrend, getStaff, getStockCategories, getStockMovements, removeStaff, renameCategory, saveRecipe, setStaffActive, updateExpense, updateInventoryItem, updateProduct, updateSize, updateStaffInfo, updateStaffRole, updateAccount, updateOutletSettings, updateTable, getOrgOutlets, getOrgReport, getBranchSummaries, getTrialStatus, createOrgOutlet, updateOrgOutlet, setOrgOutletActive, setKitchenWorkflow, deleteOrgOutlet, getOrgRoles, getRolePermissions, updateOrganization, removeOrganizationLogo, getStaffAllOutlets, getProfitReportAllOutlets, getStockAlerts } from "../api/admin";
 import { queryKeys } from "../lib/queryKey";
 import type { AccountForm, Expense, ExpenseFilters, ExpenseForm, InventoryItem, InventoryItemForm, MenuItem, MenuItemForm, OutletForm, PaymentFilters, ProfitRange, RecipeIngredient, RecipeRow, StaffForm, StaffMember, StockChange, TableForm, TrendPeriod, OrgOutlet, OrgOutletForm, OrgPeriod, OrganizationForm } from "../types/admin";
 import { useInvalidate, useOutletId } from "./outletScope";
@@ -653,5 +653,17 @@ export function useStaffAllOutlets(enabled: boolean) {
     queryFn: () => getStaffAllOutlets(outlets.data ?? []),
     enabled: enabled && !!outlets.data,
     staleTime: 30_000,
+  });
+}
+
+export function useStockAlerts() {
+  const outletId = useOutletId();
+  const { hasPermission } = usePosAuth();
+
+  return useQuery({
+    queryKey: queryKeys.stockAlerts(outletId ?? ""),
+    queryFn: getStockAlerts,
+    enabled: !!outletId && hasPermission("inventory.stock.read"),
+    refetchInterval: 60_000,
   });
 }

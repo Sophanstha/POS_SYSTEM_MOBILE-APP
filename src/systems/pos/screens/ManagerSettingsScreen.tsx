@@ -18,6 +18,7 @@ import {
   RevealFocusedInputProvider,
 } from "../../../shared/components/AdminUI";
 import OrganizationSettings from "../components/admin/OrganizationSettings";
+import PaymentQrSettings from "../components/admin/PaymentQrSettings";
 import { apiUrlFor } from "../../../shared/config";
 import { usePosAuth } from "../auth/PosAuthProvider";
 import { useThemeMode, type ThemeMode } from "../../../shared/context/ThemeContext";
@@ -28,7 +29,7 @@ import { useOutlet } from "../hooks/useMenu";
 import { useDashboardPalette } from "../../../shared/theme/dashboardPalette";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
-type Section = "organization" | "account" | "outlet" | "qrMenu" | "app";
+type Section = "organization" | "account" | "outlet" | "qrMenu" | "paymentQr" | "app";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TAX_RE = /^\d{1,3}(\.\d{1,2})?$/;
@@ -407,6 +408,11 @@ export default function ManagerSettingsScreen() {
             ) : (
               <Text style={{ color: d.muted, fontSize: 13 }}>The menu link isn't available for this account.</Text>
             )}
+          </Accordion>
+
+          {/* Payment QR (saved on this phone) */}
+          <Accordion icon="qrcode-scan" title="Payment QR" subtitle="Shop QR shown when a customer pays by QR" open={open === "paymentQr"} onToggle={() => toggle("paymentQr")}>
+            <PaymentQrSettings onSaved={setMessage} />
           </Accordion>
 
           {/* App (mobile only) */}

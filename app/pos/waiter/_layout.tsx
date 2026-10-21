@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
 
+import { useFoodReadyAlert } from "../../../src/systems/pos/hooks/useFoodReadyAlert";
 import { useStackScreenOptions } from "../../../src/shared/navigation/useStackScreenOptions";
 
 export default function WaiterLayout() {
   const screenOptions = useStackScreenOptions();
+  useFoodReadyAlert("dine_in");
 
   return (
     <Stack screenOptions={screenOptions}>

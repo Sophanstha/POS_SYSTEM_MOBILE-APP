@@ -9,6 +9,7 @@ import { useAppTheme } from "../../../../shared/theme/paperTheme";
 import type { PaymentMethod } from "../../types/pos";
 import BottomSheet from "../../../../shared/components/BottomSheet";
 import PaymentMethodPicker from "./PaymentMethodPicker";
+import PaymentQrPanel from "./PaymentQrPanel";
 import SummaryRow from "./SummaryRow";
 
 type ItemPaymentSheetProps = {
@@ -98,6 +99,8 @@ export default function ItemPaymentSheet({ item, onDismiss, onPaid }: ItemPaymen
         </View>
 
         <PaymentMethodPicker value={method} onChange={setMethod} methods={IN_PERSON_METHODS} disabled={payPartial.isPending} />
+
+        {method === "qr" ? <PaymentQrPanel amount={totals.total} /> : null}
 
         <View className="gap-1 rounded-xl p-3" style={{ backgroundColor: theme.colors.surfaceVariant }}>
           <SummaryRow label="Subtotal" value={formatRs(totals.subtotal)} />

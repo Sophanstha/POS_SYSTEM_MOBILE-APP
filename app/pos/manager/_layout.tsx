@@ -1,14 +1,21 @@
 import { Stack } from "expo-router";
 
 import AdminShell, { MenuButton } from "../../../src/systems/pos/components/admin/AdminShell";
+import StockAlertBell, { useLowStockBuzz } from "../../../src/systems/pos/components/admin/StockAlertBell";
 import { MANAGER_NAV } from "../../../src/systems/pos/navigation/adminNav";
 import { useStackScreenOptions } from "../../../src/shared/navigation/useStackScreenOptions";
 
-/** Main sections: opened from the menu, with the ☰ button (phones) instead of a back arrow. */
-const section = (title: string) => ({ title, animation: "fade" as const, headerLeft: () => <MenuButton /> });
+/** Main sections: opened from the menu, with the ☰ button (phones) instead of a back arrow, and the stock 🔔. */
+const section = (title: string) => ({
+  title,
+  animation: "fade" as const,
+  headerLeft: () => <MenuButton />,
+  headerRight: () => <StockAlertBell inventoryHref="/pos/manager/inventory" />,
+});
 
 export default function ManagerLayout() {
   const screenOptions = useStackScreenOptions();
+  useLowStockBuzz();
 
   return (
     <AdminShell items={MANAGER_NAV}>
